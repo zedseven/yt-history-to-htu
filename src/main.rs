@@ -56,10 +56,6 @@ fn main() -> AnyhowResult<()> {
 
 	let mut output_tsv = String::with_capacity(history_entries.len() * 150);
 	for history_entry in &history_entries {
-		if history_entry.header != "YouTube" {
-			continue;
-		}
-
 		if history_entry.header.is_empty() {
 			return Err(anyhow!("history entry header is empty"));
 		}
