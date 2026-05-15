@@ -1,0 +1,15 @@
+[package]
+name = "yt-history-to-htu"
+version = "0.1.0"
+authors = ["Zacchary Dempsey-Plante <zacc@ztdp.ca>"]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+html_parser = "0.7"
