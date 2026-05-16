@@ -48,7 +48,17 @@ struct OutputEntry<'a> {
 	title:            String,
 }
 
+#[derive(Debug)]
+enum HistoryEntryType {
+	Video,
+	Post,
+}
+
 fn main() -> AnyhowResult<()> {
+	const TRANSITION_TYPE: &str = "link";
+	const VIDEO_PREFIX: &str = "Watched ";
+	const POST_PREFIX: &str = "Viewed ";
+
 	let path = args()
 		.nth(1)
 		.ok_or_else(|| anyhow!("one argument is required - the path to the file"))?;
@@ -71,12 +81,17 @@ fn main() -> AnyhowResult<()> {
 			return Err(anyhow!("history entry header is empty"));
 		}
 
-		let video_title = history_entry
+		let (entry_type, video_title) = history_entry
 			.title
-			.strip_prefix("Watched ")
-			.or_else(|| history_entry.title.strip_prefix("Viewed "))
-			.ok_or_else(|| anyhow!("history entry title does not start with an expected prefix"))?
-			.trim();
+			.strip_prefix(VIDEO_PREFIX)
+			.map(|title| (HistoryEntryType::Video, title.trim()))
+			.or_else(|| {
+				history_entry
+					.title
+					.strip_prefix(POST_PREFIX)
+					.map(|title| (HistoryEntryType::Post, title.trim()))
+			})
+			.ok_or_else(|| anyhow!("history entry title does not start with an expected prefix"))?;
 
 		let channel_name = history_entry
 			.subtitles
@@ -84,21 +99,32 @@ fn main() -> AnyhowResult<()> {
 			.map(|subtitle_entry| subtitle_entry.name.trim());
 
 		let constructed_title = if let Some(channel_name) = channel_name {
-			format!(
-				"{video_title} - {channel_name} - {} (from watch history)",
-				history_entry.header
-			)
+			match entry_type {
+				HistoryEntryType::Video => format!(
+					"{video_title} - {channel_name} - {} (from watch history)",
+					history_entry.header
+				),
+				HistoryEntryType::Post => format!(
+					"Post from {channel_name} - {} (from watch history)",
+					history_entry.header
+				),
+			}
 		} else {
-			format!(
-				"{video_title} - {} (from watch history)",
-				history_entry.header
-			)
+			match entry_type {
+				HistoryEntryType::Video => format!(
+					"{video_title} - {} (from watch history)",
+					history_entry.header
+				),
+				HistoryEntryType::Post => {
+					format!("Post - {} (from watch history)", history_entry.header)
+				}
+			}
 		};
 
 		let output_entry = OutputEntry {
 			url:              history_entry.title_url.as_ref(),
 			timestamp_millis: format!("U{}", history_entry.time.timestamp_millis()),
-			transition_type:  "link",
+			transition_type:  TRANSITION_TYPE,
 			title:            constructed_title,
 		};
 
